@@ -10,7 +10,7 @@ Shared CI container images: linux base bundling go, che, render-tpl, lefthook, y
 Shared CI container images for the `konradodwrot` repos. Owns a
 `debian:bookworm-slim` linux base image baking the common CI toolchain (go, che,
 render-tpl, lefthook, yq, zsh, clang, make, git, zig, goreleaser, terraform,
-glab), built by kaniko and published to this project's container registry.
+glab), built by Docker buildx and published to this project's container registry.
 
 ## Why It Exists
 
@@ -31,7 +31,7 @@ a cached image pull.
 
 Consumers pin `registry.gitlab.com/konradodwrot/infra/ci-images/ci-linux:bookworm`
 as their job `image:`. Bump a tool by editing `ci/tool-versions.env`; CI rebuilds
-and republishes the image via kaniko.
+and republishes the image via Docker buildx.
 
 ## Future Direction
 
@@ -46,7 +46,7 @@ and republishes the image via kaniko.
 - `conventions/makefile/convention.md`: house Makefile style, `[genai-include]` sectioning that feeds the generated Makefile doc for AI agents.
 - `conventions/templates/convention.md`: generating repo docs with che templates: `templates/1-env|2-data|3-audience`, `che.yml` wiring, `make render-templates`.
 - `conventions/ci/convention.md`: lefthook pre-commit hooks (minimal: docs generation check), re-run in a minimal CI validate job.
-- `conventions/license/convention.md`: every public repo carries `LICENSE` (unmodified MIT, creation-year copyright), private repos carry none.
+- `conventions/license/convention.md`: every public repo carries `LICENSE` (unmodified MIT, creation-year copyright).
 
 Each convention dir carries a runnable `example/`. This repo itself follows all of these conventions.
 

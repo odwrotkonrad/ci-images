@@ -10,7 +10,7 @@ Shared CI container images for the `konradodwrot` repos.
 Shared CI container images for the `konradodwrot` repos. Owns a
 `debian:bookworm-slim` linux base image baking the common CI toolchain (go, che,
 render-tpl, lefthook, yq, zsh, clang, make, git, zig, goreleaser, terraform,
-glab), built by kaniko and published to this project's container registry.
+glab), built by Docker buildx and published to this project's container registry.
 
 ### Why It Exists
 
@@ -31,7 +31,7 @@ a cached image pull.
 
 Consumers pin `registry.gitlab.com/konradodwrot/infra/ci-images/ci-linux:bookworm`
 as their job `image:`. Bump a tool by editing `ci/tool-versions.env`; CI rebuilds
-and republishes the image via kaniko.
+and republishes the image via Docker buildx.
 
 ### Future Direction
 
@@ -76,14 +76,14 @@ The image is public-pullable (public repo), so cross-project pulls need no auth.
 
 ## Versions
 
-Tool pins live in one place: `ci/tool-versions.env`. Bump there; the kaniko job
-passes each as a `--build-arg` into `ci/Dockerfile`. This is the single source of
-truth for CI-image tool versions (host provisioning still lives in
+Tool pins live in one place: `ci/tool-versions.env`. Bump there; the file is
+`COPY`-ed into the build and sourced per `RUN` in `ci/Dockerfile`. This is the
+single source of truth for CI-image tool versions (host provisioning still lives in
 `configs/ci/zsh/scripts/installs/00-ci-deps.zsh`).
 
 ## Build
 
-CI builds the image with kaniko on changes to `ci/Dockerfile` / `ci/tool-versions.env`,
+CI builds the image with Docker buildx on changes to `ci/Dockerfile` / `ci/tool-versions.env`,
 on `main`, or manually. See `.gitlab-ci.yml`.
 
 ## License

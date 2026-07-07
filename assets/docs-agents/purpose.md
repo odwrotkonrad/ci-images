@@ -5,7 +5,7 @@
 Shared CI container images for the `konradodwrot` repos. Owns a
 `debian:bookworm-slim` linux base image baking the common CI toolchain (go, che,
 render-tpl, lefthook, yq, zsh, clang, make, git, zig, goreleaser, terraform,
-glab), built by kaniko and published to this project's container registry.
+glab), built by Docker buildx and published to this project's container registry.
 
 ## Why It Exists
 
@@ -26,7 +26,7 @@ a cached image pull.
 
 Consumers pin `registry.gitlab.com/konradodwrot/infra/ci-images/ci-linux:bookworm`
 as their job `image:`. Bump a tool by editing `ci/tool-versions.env`; CI rebuilds
-and republishes the image via kaniko.
+and republishes the image via Docker buildx.
 
 ## Future Direction
 
