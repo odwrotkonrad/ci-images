@@ -56,15 +56,21 @@ build-ci-linux-image:
         --cache=true
         --cache-repo "$CI_LINUX_IMAGE-cache"
 
-#[why] self-bootstrapping: this repo's own image may not exist yet (chicken/egg), so bootstrap from upstream golang like every other repo did pre-migration
+#[why] self-bootstrapping: this repo's own image may not exist yet (chicken/egg), so bootstrap from a minimal debian and fetch the same prebuilt che/lefthook the image bakes (no slow CGO compile of che)
 validate-pre-commit-all:
   stage: validate
   needs: []
-  image: golang:1.26-bookworm
+  image: debian:bookworm-slim
   before_script:
-    - apt-get update && apt-get install -y --no-install-recommends make zsh
-    - go install gitlab.com/konradodwrot/go/che@latest
-    - go install github.com/evilmartians/lefthook@latest
+    - apt-get update && apt-get install -y --no-install-recommends make zsh git curl ca-certificates
+    - export $(grep -vE '^\s*(#|$)' ci/tool-versions.env | xargs)
+    - che_base="https://gitlab.com/api/v4/projects/konradodwrot%2Fgo%2Fche/packages/generic/che/${CHE_VERSION}"
+    - curl -fsSL -o /tmp/che.tar.gz "${che_base}/che_${CHE_VERSION}_linux_amd64.tar.gz"
+    - echo "${CHE_SHA256_LINUX_AMD64}  /tmp/che.tar.gz" | sha256sum -c -
+    - tar -xz -C /usr/local/bin -f /tmp/che.tar.gz che
+    - curl -fsSL -o /usr/local/bin/lefthook "https://github.com/evilmartians/lefthook/releases/download/v${LEFTHOOK_VERSION}/lefthook_${LEFTHOOK_VERSION}_Linux_x86_64"
+    - echo "${LEFTHOOK_SHA256_LINUX_AMD64}  /usr/local/bin/lefthook" | sha256sum -c -
+    - chmod +x /usr/local/bin/lefthook
     - mkdir -p ~/.config/lefthook
     - '[ -f ~/.config/lefthook/lefthook.yml ] || printf "min_version: 2.1.9\n" > ~/.config/lefthook/lefthook.yml'
   script:
