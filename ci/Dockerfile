@@ -43,7 +43,7 @@ RUN set -eux; \
     ln -sf /usr/local/go/bin/go /usr/local/bin/go; \
     ln -sf /usr/local/go/bin/gofmt /usr/local/bin/gofmt
 
-#[why] lefthook + yq publish prebuilt binaries; fetch+checksum instead of go install (no source compile of their dep trees)
+#[why] prebuilt bins, not go install: skip compiling their dep trees
 RUN set -eux; \
     curl -fsSL -o /usr/local/bin/lefthook "https://github.com/evilmartians/lefthook/releases/download/v${LEFTHOOK_VERSION}/lefthook_${LEFTHOOK_VERSION}_Linux_x86_64"; \
     echo "${LEFTHOOK_SHA256_LINUX_AMD64}  /usr/local/bin/lefthook" | sha256sum -c -; \
@@ -52,7 +52,7 @@ RUN set -eux; \
     echo "${YQ_SHA256_LINUX_AMD64}  /usr/local/bin/yq" | sha256sum -c -; \
     chmod +x /usr/local/bin/yq
 
-#[why] che + render-tpl publish prebuilt tarballs to the GitLab generic package registry (anon-pullable); fetch+checksum instead of the slow CGO compile (tree-sitter + 1Password sdk)
+#[why] prebuilt tarballs from the package registry, not go install: skip che's slow CGO build (tree-sitter + 1Password sdk)
 RUN set -eux; \
     che_base="https://gitlab.com/api/v4/projects/konradodwrot%2Fgo%2Fche/packages/generic/che/${CHE_VERSION}"; \
     curl -fsSL -o /tmp/che.tar.gz "${che_base}/che_${CHE_VERSION}_linux_amd64.tar.gz"; \
@@ -80,8 +80,8 @@ RUN set -eux; \
     unzip -d /usr/local/bin /tmp/terraform.zip; \
     rm /tmp/terraform.zip
 
-#[why] bake infra/git-repos' providers into the plugin cache so consuming jobs' 'terraform init' copies them from disk instead of re-downloading each run; the seed versions.tf + lock are rendered from git-repos by che (docsgen), keeping them in sync with what that repo actually locks; TF_PLUGIN_CACHE_DIR (set above) makes init reuse the cache
-#[why] COPY the che-rendered files, not ADD <git-repos raw url>: kaniko caches ADD by url string, not fetched content, so with --cache on it would silently bake a stale lock; COPY keys the layer on committed file content, and the lock stays reviewed in the MR diff, checksummable, and buildable offline
+#[why] seed the plugin cache so consumers' 'terraform init' copies providers from disk, no re-download; seed files rendered from git-repos by che (docsgen), tracking its lock
+#[why] COPY the rendered files, not ADD <url>: kaniko caches ADD by url, not content, so --cache would bake a stale lock; COPY keys on committed content, stays reviewed + checksummable + offline
 COPY ci/terraform-providers.tf /tmp/tf-cache-seed/versions.tf
 COPY ci/terraform.lock.hcl /tmp/tf-cache-seed/.terraform.lock.hcl
 RUN set -eux; \
