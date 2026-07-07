@@ -81,7 +81,6 @@ RUN set -eux; \
     rm /tmp/terraform.zip
 
 #[why] seed the plugin cache so consumers' 'terraform init' copies providers from disk, no re-download; seed files rendered from git-repos by che (docsgen), tracking its lock
-#[why] COPY the rendered files, not ADD <url>: kaniko caches ADD by url, not content, so --cache would bake a stale lock; COPY keys on committed content, stays reviewed + checksummable + offline
 COPY ci/terraform-providers.tf /tmp/tf-cache-seed/versions.tf
 COPY ci/terraform.lock.hcl /tmp/tf-cache-seed/.terraform.lock.hcl
 RUN set -eux; \
