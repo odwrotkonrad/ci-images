@@ -81,6 +81,7 @@ RUN set -eux; \
     rm /tmp/terraform.zip
 
 #[why] bake infra/git-repos' providers into the plugin cache so consuming jobs' 'terraform init' copies them from disk instead of re-downloading each run; the seed versions.tf + lock are rendered from git-repos by che (docsgen), keeping them in sync with what that repo actually locks; TF_PLUGIN_CACHE_DIR (set above) makes init reuse the cache
+#[why] COPY the che-rendered files, not ADD <git-repos raw url>: kaniko caches ADD by url string, not fetched content, so with --cache on it would silently bake a stale lock; COPY keys the layer on committed file content, and the lock stays reviewed in the MR diff, checksummable, and buildable offline
 COPY ci/terraform-providers.tf /tmp/tf-cache-seed/versions.tf
 COPY ci/terraform.lock.hcl /tmp/tf-cache-seed/.terraform.lock.hcl
 RUN set -eux; \
