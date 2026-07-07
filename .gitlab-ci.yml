@@ -16,9 +16,14 @@ variables:
 build-ci-linux-image:
   stage: build-image
   needs: []
-  image:
-    name: gcr.io/kaniko-project/executor:debug
-    entrypoint: [""]
+  image: docker:27-cli
+  services:
+    - docker:27-dind
+  variables:
+    DOCKER_HOST: tcp://docker:2376
+    DOCKER_TLS_CERTDIR: "/certs"
+    DOCKER_CERT_PATH: "/certs/client"
+    DOCKER_TLS_VERIFY: "1"
   rules:
     - if: $CI_MERGE_REQUEST_DRAFT == "true"
       when: never
@@ -32,35 +37,22 @@ build-ci-linux-image:
     - when: manual
       allow_failure: true
   before_script:
-    - mkdir -p /kaniko/.docker
-    - echo "{\"auths\":{\"$CI_REGISTRY\":{\"auth\":\"$(printf '%s:%s' "$CI_REGISTRY_USER" "$CI_REGISTRY_PASSWORD" | base64 | tr -d '\n')\"}}}" >/kaniko/.docker/config.json
-    - export $(grep -vE '^\s*(#|$)' ci/tool-versions.env | xargs)
+    - echo "$CI_REGISTRY_PASSWORD" | docker login -u "$CI_REGISTRY_USER" --password-stdin "$CI_REGISTRY"
+    - docker context create dind --docker "host=$DOCKER_HOST,ca=$DOCKER_CERT_PATH/ca.pem,cert=$DOCKER_CERT_PATH/cert.pem,key=$DOCKER_CERT_PATH/key.pem"
+    - docker buildx create --use --driver docker-container dind
     #[why] on a tag pipeline publish the immutable :vX.Y.Z consumers pin; else re-tag :bookworm as the version slot (harmless no-op)
     - VERSION_TAG="${CI_COMMIT_TAG:-bookworm}"
   script:
-    - /kaniko/executor
-        --context "$CI_PROJECT_DIR"
-        --dockerfile "$CI_PROJECT_DIR/ci/Dockerfile"
-        --destination "$CI_LINUX_IMAGE:$VERSION_TAG"
-        --destination "$CI_LINUX_IMAGE:bookworm"
-        --destination "$CI_LINUX_IMAGE:latest"
-        --destination "$CI_LINUX_IMAGE:$CI_COMMIT_SHORT_SHA"
-        --build-arg "GO_VERSION=$GO_VERSION"
-        --build-arg "GO_SHA256_LINUX_AMD64=$GO_SHA256_LINUX_AMD64"
-        --build-arg "CHE_VERSION=$CHE_VERSION"
-        --build-arg "CHE_SHA256_LINUX_AMD64=$CHE_SHA256_LINUX_AMD64"
-        --build-arg "RENDER_TPL_VERSION=$RENDER_TPL_VERSION"
-        --build-arg "RENDER_TPL_SHA256_LINUX_AMD64=$RENDER_TPL_SHA256_LINUX_AMD64"
-        --build-arg "LEFTHOOK_VERSION=$LEFTHOOK_VERSION"
-        --build-arg "LEFTHOOK_SHA256_LINUX_AMD64=$LEFTHOOK_SHA256_LINUX_AMD64"
-        --build-arg "YQ_VERSION=$YQ_VERSION"
-        --build-arg "YQ_SHA256_LINUX_AMD64=$YQ_SHA256_LINUX_AMD64"
-        --build-arg "ZIG_VERSION=$ZIG_VERSION"
-        --build-arg "GORELEASER_VERSION=$GORELEASER_VERSION"
-        --build-arg "TERRAFORM_VERSION=$TERRAFORM_VERSION"
-        --build-arg "GLAB_VERSION=$GLAB_VERSION"
-        --cache=true
-        --cache-repo "$CI_LINUX_IMAGE-cache"
+    - docker buildx build
+        --file "$CI_PROJECT_DIR/ci/Dockerfile"
+        --tag "$CI_LINUX_IMAGE:$VERSION_TAG"
+        --tag "$CI_LINUX_IMAGE:bookworm"
+        --tag "$CI_LINUX_IMAGE:latest"
+        --tag "$CI_LINUX_IMAGE:$CI_COMMIT_SHORT_SHA"
+        --cache-from "type=registry,ref=$CI_LINUX_IMAGE-cache"
+        --cache-to "type=registry,ref=$CI_LINUX_IMAGE-cache,mode=max"
+        --push
+        "$CI_PROJECT_DIR"
 
 #[why] self-bootstrapping: this repo's own image may not exist yet (chicken/egg), so bootstrap from a minimal debian and fetch the same prebuilt che/lefthook the image bakes (no slow CGO compile of che)
 validate-pre-commit-all:

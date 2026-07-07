@@ -1,20 +1,7 @@
 ##[>] 🤖🤖🤖
 FROM debian:bookworm-slim
 
-ARG GO_VERSION=1.26.4
-ARG GO_SHA256_LINUX_AMD64=1153d3d50e0ac764b447adfe05c2bcf08e889d42a02e0fe0259bd47f6733ad7f
-ARG CHE_VERSION=0.0.14
-ARG CHE_SHA256_LINUX_AMD64=d145e7d0197a3198109551c8833f53aaea80a063b61bc023d3773e58dbd97cda
-ARG RENDER_TPL_VERSION=0.0.7
-ARG RENDER_TPL_SHA256_LINUX_AMD64=15b4464212a2ccafbb17ea1448386f1c6f533d3fcf9e24c76022c74356c2853f
-ARG LEFTHOOK_VERSION=2.1.9
-ARG LEFTHOOK_SHA256_LINUX_AMD64=0d60b0d350c923963729574f6431171f0277788884ad0c6284fa0160c36e3877
-ARG YQ_VERSION=v4.53.3
-ARG YQ_SHA256_LINUX_AMD64=fa52a4e758c63d38299163fbdd1edfb4c4963247918bf9c1c5d31d84789eded4
-ARG ZIG_VERSION=0.16.0
-ARG GORELEASER_VERSION=2.16.0
-ARG TERRAFORM_VERSION=1.15.7
-ARG GLAB_VERSION=1.75.0
+COPY ci/tool-versions.env /tmp/tool-versions.env
 
 ENV GOPATH=/usr/local/go-tools
 ENV GOROOT=/usr/local/go
@@ -31,6 +18,7 @@ RUN useradd -m -s /bin/zsh ko \
  && echo 'ko ALL=(ALL) NOPASSWD: ALL' >/etc/sudoers.d/ko
 
 RUN set -eux; \
+    . /tmp/tool-versions.env; \
     arch="$(dpkg --print-architecture)"; \
     case "$arch" in \
       amd64) goplat=linux-amd64; gosha="$GO_SHA256_LINUX_AMD64" ;; \
@@ -45,6 +33,7 @@ RUN set -eux; \
 
 #[why] prebuilt bins, not go install: skip compiling their dep trees
 RUN set -eux; \
+    . /tmp/tool-versions.env; \
     curl -fsSL -o /usr/local/bin/lefthook "https://github.com/evilmartians/lefthook/releases/download/v${LEFTHOOK_VERSION}/lefthook_${LEFTHOOK_VERSION}_Linux_x86_64"; \
     echo "${LEFTHOOK_SHA256_LINUX_AMD64}  /usr/local/bin/lefthook" | sha256sum -c -; \
     chmod +x /usr/local/bin/lefthook; \
@@ -54,6 +43,7 @@ RUN set -eux; \
 
 #[why] prebuilt tarballs from the package registry, not go install: skip che's slow CGO build (tree-sitter + 1Password sdk)
 RUN set -eux; \
+    . /tmp/tool-versions.env; \
     che_base="https://gitlab.com/api/v4/projects/konradodwrot%2Fgo%2Fche/packages/generic/che/${CHE_VERSION}"; \
     curl -fsSL -o /tmp/che.tar.gz "${che_base}/che_${CHE_VERSION}_linux_amd64.tar.gz"; \
     echo "${CHE_SHA256_LINUX_AMD64}  /tmp/che.tar.gz" | sha256sum -c -; \
@@ -66,15 +56,18 @@ RUN set -eux; \
     rm /tmp/render-tpl.tar.gz
 
 RUN set -eux; \
+    . /tmp/tool-versions.env; \
     arch="$(uname -m)"; \
     curl -fsSL "https://ziglang.org/download/${ZIG_VERSION}/zig-${arch}-linux-${ZIG_VERSION}.tar.xz" | tar -xJ -C /usr/local; \
     ln -sf "/usr/local/zig-${arch}-linux-${ZIG_VERSION}/zig" /usr/local/bin/zig
 
 RUN set -eux; \
+    . /tmp/tool-versions.env; \
     curl -fsSL "https://github.com/goreleaser/goreleaser/releases/download/v${GORELEASER_VERSION}/goreleaser_Linux_x86_64.tar.gz" \
       | tar -xz -C /usr/local/bin goreleaser
 
 RUN set -eux; \
+    . /tmp/tool-versions.env; \
     arch="$(dpkg --print-architecture)"; \
     curl -fsSL -o /tmp/terraform.zip "https://releases.hashicorp.com/terraform/${TERRAFORM_VERSION}/terraform_${TERRAFORM_VERSION}_linux_${arch}.zip"; \
     unzip -d /usr/local/bin /tmp/terraform.zip; \
@@ -90,6 +83,7 @@ RUN set -eux; \
     rm -rf /tmp/tf-cache-seed
 
 RUN set -eux; \
+    . /tmp/tool-versions.env; \
     arch="$(dpkg --print-architecture)"; \
     curl -fsSL -o /tmp/glab.tar.gz "https://gitlab.com/gitlab-org/cli/-/releases/v${GLAB_VERSION}/downloads/glab_${GLAB_VERSION}_linux_${arch}.tar.gz"; \
     tar -xz -C /usr/local -f /tmp/glab.tar.gz bin/glab; \
