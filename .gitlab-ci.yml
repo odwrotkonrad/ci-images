@@ -21,8 +21,10 @@ build-ci-linux-image:
     - if: $CI_MERGE_REQUEST_DRAFT == "true"
       when: never
     - changes:
-        - Dockerfile
+        - ci/Dockerfile
         - ci/tool-versions.env
+        - ci/terraform-providers.tf
+        - ci/terraform.lock.hcl
     - if: $CI_COMMIT_BRANCH == $CI_DEFAULT_BRANCH
     - when: manual
       allow_failure: true
@@ -33,14 +35,16 @@ build-ci-linux-image:
   script:
     - /kaniko/executor
         --context "$CI_PROJECT_DIR"
-        --dockerfile "$CI_PROJECT_DIR/Dockerfile"
+        --dockerfile "$CI_PROJECT_DIR/ci/Dockerfile"
         --destination "$CI_LINUX_IMAGE:bookworm"
         --destination "$CI_LINUX_IMAGE:latest"
         --destination "$CI_LINUX_IMAGE:$CI_COMMIT_SHORT_SHA"
         --build-arg "GO_VERSION=$GO_VERSION"
         --build-arg "GO_SHA256_LINUX_AMD64=$GO_SHA256_LINUX_AMD64"
         --build-arg "CHE_VERSION=$CHE_VERSION"
+        --build-arg "CHE_SHA256_LINUX_AMD64=$CHE_SHA256_LINUX_AMD64"
         --build-arg "RENDER_TPL_VERSION=$RENDER_TPL_VERSION"
+        --build-arg "RENDER_TPL_SHA256_LINUX_AMD64=$RENDER_TPL_SHA256_LINUX_AMD64"
         --build-arg "LEFTHOOK_VERSION=$LEFTHOOK_VERSION"
         --build-arg "LEFTHOOK_SHA256_LINUX_AMD64=$LEFTHOOK_SHA256_LINUX_AMD64"
         --build-arg "YQ_VERSION=$YQ_VERSION"
