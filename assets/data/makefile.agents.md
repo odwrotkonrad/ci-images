@@ -4,7 +4,6 @@
 ### Environment Variables:
 
 `BASE_IMAGE=image ref` dev-sandbox base image ref, unset -> ci-linux:local (built by run-image-build-ci-linux)
-`CONFIGS_SHA=sha` configs commit baked into dev-sandbox, unset -> configs main head
 
 ### Wrappers:
 
@@ -13,7 +12,7 @@
 ### Images:
 
 `run-image-build-ci-linux` build ci-linux:local for the host arch
-`run-image-build-dev-sandbox` build dev-sandbox:local for the host arch (BASE_IMAGE base, CONFIGS_SHA bake)
+`run-image-build-dev-sandbox` build dev-sandbox:local for the host arch (BASE_IMAGE base, configs main baked fresh)
 
 ### Docs:
 

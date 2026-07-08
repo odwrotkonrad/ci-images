@@ -13,9 +13,6 @@ COMMANDS := render-templates run-repo-ci-prepare-hooks run-repo-ci-precommit-all
 #[what] dev-sandbox base image ref, unset -> ci-linux:local (built by run-image-build-ci-linux)
 #[vals] image ref
 export BASE_IMAGE
-#[what] configs commit baked into dev-sandbox, unset -> configs main head
-#[vals] sha
-export CONFIGS_SHA
 ##[<] Environment Variables
 
 ##[>] Wrappers [genai-include]
@@ -28,7 +25,7 @@ run-image-build-all: run-image-build-ci-linux run-image-build-dev-sandbox
 run-image-build-ci-linux:
 	@run-image-build-ci-linux.zsh
 
-#[what] build dev-sandbox:local for the host arch (BASE_IMAGE base, CONFIGS_SHA bake)
+#[what] build dev-sandbox:local for the host arch (BASE_IMAGE base, configs main baked fresh)
 run-image-build-dev-sandbox:
 	@run-image-build-dev-sandbox.zsh
 ##[<] Images
