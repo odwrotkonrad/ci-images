@@ -59,8 +59,11 @@ RUN set -eux; \
     rm /tmp/golangci-lint.tar.gz
 
 #[why] prebuilt tarballs from the package registry, not go install: skip che's slow CGO build (tree-sitter + 1Password sdk)
-#   one che tarball bundles che + render-tpl (one fetch, one checksum)
+#   one che tarball bundles che + render-tpl (one fetch, no checksum: latest alias)
+#[why] CHE_REF busts this layer only when the latest che tarball changed: CI passes its etag, so an unchanged che keeps the cached layer, a new che re-runs the fetch
+ARG CHE_REF=latest
 RUN set -eux; \
+    : "${CHE_REF}"; \
     arch="$(dpkg --print-architecture)"; \
     case "$arch" in \
       amd64) plat=linux_amd64 ;; \
