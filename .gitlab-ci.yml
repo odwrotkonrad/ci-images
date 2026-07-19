@@ -13,6 +13,7 @@ stages:
 variables:
   CI_LINUX_IMAGE: $CI_REGISTRY_IMAGE/ci-linux
   DEV_SANDBOX_IMAGE: $CI_REGISTRY_IMAGE/dev-sandbox
+  CHE_VALIDATE_SPEC: error
 
 #[why] one job per arch: qemu-emulated arm64 in one multi-arch build doubles the wall clock; arm64 jobs are manual, amd64 ci-linux is the only automatic build. arm64 pushes -arm64 suffixed tags (a single-arch push to a shared tag would clobber the other arch's manifest)
 .build-image:
