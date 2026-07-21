@@ -15,7 +15,7 @@ variables:
   DEV_SANDBOX_IMAGE: $CI_REGISTRY_IMAGE/dev-sandbox
   CHE_VALIDATE_SPEC: error
 
-#[why] one job per arch: qemu-emulated arm64 in one multi-arch build doubles the wall clock; arm64 jobs are manual, amd64 ci-linux is the only automatic build. arm64 pushes -arm64 suffixed tags (a single-arch push to a shared tag would clobber the other arch's manifest)
+#[why] one job per arch: qemu-emulated arm64 in one multi-arch build doubles the wall clock; on this repo's own pipelines amd64 ci-linux is the only automatic build, the rest are manual. BUILD_ALL_IMAGES (che release trigger) runs all four; BUILD_DEV_SANDBOX_IMAGES (configs main trigger) runs the two dev-sandbox jobs only. arm64 pushes -arm64 suffixed tags (a single-arch push to a shared tag would clobber the other arch's manifest)
 .build-image:
   stage: build-image
   image: docker:27-cli
@@ -41,6 +41,9 @@ build-ci-linux-image-amd64:
   rules:
     - if: $CI_MERGE_REQUEST_DRAFT == "true"
       when: never
+    - if: $BUILD_DEV_SANDBOX_IMAGES
+      when: never
+    - if: $BUILD_ALL_IMAGES
     - if: $CI_COMMIT_TAG
     - changes:
         - ci/ci-linux/Dockerfile
@@ -70,6 +73,9 @@ build-ci-linux-image-arm64:
   rules:
     - if: $CI_MERGE_REQUEST_DRAFT == "true"
       when: never
+    - if: $BUILD_DEV_SANDBOX_IMAGES
+      when: never
+    - if: $BUILD_ALL_IMAGES
     - when: manual
       allow_failure: true
   script:
@@ -96,6 +102,8 @@ build-ci-linux-image-arm64:
   rules:
     - if: $CI_MERGE_REQUEST_DRAFT == "true"
       when: never
+    - if: $BUILD_ALL_IMAGES
+    - if: $BUILD_DEV_SANDBOX_IMAGES
     - when: manual
       allow_failure: true
   before_script:
@@ -108,6 +116,8 @@ build-ci-linux-image-arm64:
   rules:
     - if: $CI_MERGE_REQUEST_DRAFT == "true"
       when: never
+    - if: $BUILD_ALL_IMAGES
+    - if: $BUILD_DEV_SANDBOX_IMAGES
     - when: manual
       allow_failure: true
 
@@ -154,6 +164,10 @@ build-dev-sandbox-image-arm64:
 validate-pre-commit-all:
   stage: validate
   needs: []
+  rules:
+    - if: $BUILD_DEV_SANDBOX_IMAGES
+      when: never
+    - when: on_success
   image: debian:bookworm-slim
   before_script:
     - apt-get update && apt-get install -y --no-install-recommends make zsh git curl ca-certificates
@@ -176,6 +190,8 @@ release:
   image: $CI_LINUX_IMAGE:latest
   needs: []
   rules:
+    - if: $BUILD_DEV_SANDBOX_IMAGES
+      when: never
     - if: $CI_COMMIT_BRANCH == $CI_DEFAULT_BRANCH
   variables:
     GITLAB_TOKEN: $CI_JOB_TOKEN
